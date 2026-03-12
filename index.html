@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>b&b · professional floral gallery</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <canvas id="petal-canvas"></canvas>
+  <div class="parallax-bg" id="parallaxBg"></div>
+  <div class="parallax-mid"></div>
+
+  <!-- NAVIGATION BAR with b&b logo -->
+  <nav>
+    <div class="logo">b&b</div>
+    <div class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION (Home) -->
+  <section id="home" class="hero">
+    <h1>blush & bloom</h1>
+    <p>Every flower must grow through dirt.</p>
+  </section>
+
+  <!-- GALLERY SECTION (right after hero) -->
+  <section id="gallery" class="gallery-section">
+    <div class="flower-grid" id="flowerGrid"></div>
+  </section>
+
+  <!-- QUOTE (deep meanings) -->
+  <div class="quote-tag">
+    Flowers are not just beautiful to look at;<br>
+    <span>they also carry deep meanings and messages.</span>
+  </div>
+
+  
+    <!-- ADD NEW FLOWER FORM (no default values) -->
+  <div class="add-form-container">
+    <input type="text" id="flowerName" placeholder="flower name (e.g., Lily)" value="">
+    <input type="text" id="flowerLatin" placeholder="latin / subtitle (e.g., lilium)" value="">
+    <input type="url" id="flowerImage" placeholder="direct image URL (ends with .jpg, .png, etc.)" value="">
+    <input type="text" id="flowerDesc" placeholder="short description" value="">
+    <button id="addFlowerBtn">+ add new flower</button>
+  </div>
+
+  <!-- ABOUT US SECTION -->
+  <section id="about" class="about-section">
+    <h2>About Us</h2>
+    <p>b&b is a serene space dedicated to the poetry of flowers. We believe every petal tells a story, and every bloom carries a whisper of nature's wisdom. Here, you can curate your own digital garden, add flowers that speak to you, and explore the gentle beauty of floral symbolism — all accompanied by softly falling petals.</p>
+  </section>
+
+  <!-- CONTACT US (with name + message fields) -->
+  <section id="contact" class="contact-section">
+    <h2>Contact the Admin</h2>
+    <div class="contact-form">
+      <div class="form-group">
+        <label for="name">Your name</label>
+        <input type="text" id="name" placeholder="e.g. Jamie" value="Flower lover">
+      </div>
+      <div class="form-group">
+        <label for="message">Your message</label>
+        <textarea id="message" placeholder="What would you like to share?">I adore your petal garden!</textarea>
+      </div>
+      <button id="sendMessageBtn">Send message ✨</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="#home">Home</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="copyright">
+        © 2026 b&b · crafted with petalsoft
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
