@@ -63,7 +63,7 @@
   animatePetals();
 
   // ---------- CREATE CONFIRMATION MODAL (theme matching) ----------
-  function createConfirmationModal(title, message, icon = '🌸') {
+  function createConfirmationModal(title, message, icon = '🌸', showCancel = false, onConfirm = null) {
     // Remove existing modal if any
     const existingModal = document.getElementById('theme-modal');
     if (existingModal) existingModal.remove();
@@ -81,7 +81,6 @@
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      pointer-events: none;
     `;
     
     // Create backdrop
@@ -112,7 +111,7 @@
       transform: scale(0.8) translateY(20px);
       opacity: 0;
       transition: all 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
-      max-width: 400px;
+      max-width: 450px;
       width: 90%;
       pointer-events: all;
       position: relative;
@@ -142,33 +141,44 @@
     // Add message
     const msgEl = document.createElement('p');
     msgEl.style.cssText = `
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #7a4e5a;
       margin: 0.5rem 0 1.5rem;
       font-style: italic;
       border-left: 3px solid #ffb0c0;
       padding-left: 1rem;
+      text-align: left;
+      line-height: 1.5;
     `;
-    msgEl.textContent = message;
+    msgEl.innerHTML = message;
+    
+    // Button container
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+    `;
     
     // Add OK button
     const okBtn = document.createElement('button');
     okBtn.style.cssText = `
       background: #ffb3c6;
       border: none;
-      padding: 0.8rem 2.5rem;
+      padding: 0.8rem 2rem;
       border-radius: 50px;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 500;
       color: #5d3842;
       cursor: pointer;
       transition: 0.2s;
       box-shadow: 0 8px 16px #ffb0c0;
       border: 1px solid #ffcbd6;
-      margin-top: 1rem;
       letter-spacing: 1px;
+      flex: ${showCancel ? '1' : 'auto'};
     `;
-    okBtn.textContent = 'Wonderful ✨';
+    okBtn.textContent = showCancel ? 'Try Again' : 'Got It ✨';
     okBtn.onmouseover = () => {
       okBtn.style.background = '#ffa2b9';
       okBtn.style.transform = 'scale(1.02)';
@@ -183,7 +193,52 @@
       modalContent.style.opacity = '0';
       modalContent.style.transform = 'scale(0.8) translateY(20px)';
       setTimeout(() => modal.remove(), 400);
+      if (onConfirm) onConfirm(false);
     };
+    
+    buttonContainer.appendChild(okBtn);
+    
+    // Add Cancel button if needed
+    if (showCancel) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.style.cssText = `
+        background: transparent;
+        border: 2px solid #ffb3c6;
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #633f48;
+        cursor: pointer;
+        transition: 0.2s;
+        letter-spacing: 1px;
+        flex: 1;
+      `;
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onmouseover = () => {
+        cancelBtn.style.background = '#ffe2e9';
+      };
+      cancelBtn.onmouseout = () => {
+        cancelBtn.style.background = 'transparent';
+      };
+      cancelBtn.onclick = () => {
+        // Fade out
+        backdrop.style.opacity = '0';
+        modalContent.style.opacity = '0';
+        modalContent.style.transform = 'scale(0.8) translateY(20px)';
+        setTimeout(() => modal.remove(), 400);
+        if (onConfirm) onConfirm(true);
+      };
+      buttonContainer.appendChild(cancelBtn);
+    }
+    
+    modalContent.appendChild(iconEl);
+    modalContent.appendChild(titleEl);
+    modalContent.appendChild(msgEl);
+    modalContent.appendChild(buttonContainer);
+    modal.appendChild(backdrop);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
     
     // Add keyframe animation for icon
     const style = document.createElement('style');
@@ -195,15 +250,6 @@
     `;
     document.head.appendChild(style);
     
-    // Assemble modal
-    modalContent.appendChild(iconEl);
-    modalContent.appendChild(titleEl);
-    modalContent.appendChild(msgEl);
-    modalContent.appendChild(okBtn);
-    modal.appendChild(backdrop);
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-    
     // Trigger animation after a tiny delay
     setTimeout(() => {
       backdrop.style.opacity = '1';
@@ -214,7 +260,13 @@
     return modal;
   }
 
-  // ---------- FLOWER DATA WITH ADMIN DELETE ONLY ----------
+  // ---------- URL EXTENSION VALIDATION FUNCTION (NEW) ----------
+  function hasImageExtension(url) {
+    // Check if URL ends with common image extensions
+    return url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i) !== null;
+  }
+
+  // ---------- FLOWER DATA WITH PERMANENT STORAGE (no expiration) ----------
   const STORAGE_KEY = 'blushBloomFlowers';
 
   // Default flowers with local images
@@ -274,6 +326,7 @@
         parsed.forEach(f => f.isDefault = false);
         flowers = [...defaultFlowers, ...parsed];
         console.log("Loaded flowers from storage:", flowers.length, "total flowers");
+        console.log("Your flowers are stored permanently in your browser!");
       } catch {
         flowers = [...defaultFlowers];
         console.log("Error parsing storage, using defaults");
@@ -288,7 +341,8 @@
     // only save user-added flowers (those with isDefault = false)
     const userFlowers = flowers.filter(f => !f.isDefault);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userFlowers));
-    console.log("Saved user flowers:", userFlowers.length);
+    console.log("Saved user flowers permanently:", userFlowers.length);
+    console.log("These flowers will stay here forever until you remove them.");
   }
 
   loadFlowers();
@@ -361,41 +415,68 @@
 
   renderFlowers();
 
+  
+
   // ADD NEW FLOWER (always user-added, deletable) - NO DEFAULT VALUES
   const addBtn = document.getElementById('addFlowerBtn');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
       const name = document.getElementById('flowerName').value.trim();
       const latin = document.getElementById('flowerLatin').value.trim();
-      let imgUrl = document.getElementById('flowerImage').value.trim();
+      const imgUrl = document.getElementById('flowerImage').value.trim();
       const desc = document.getElementById('flowerDesc').value.trim();
       
       if (!name || !latin || !imgUrl) { 
         createConfirmationModal(
           'Missing Information', 
-          'Please fill in flower name, latin name, and image URL.',
+          'Please fill in:<br>• Flower name<br>• Latin/subtitle name<br>• Image URL',
           '⚠️'
         );
         return; 
       }
       
+      // ---------- NEW: Check if URL has image extension ----------
+      if (!hasImageExtension(imgUrl)) {
+        createConfirmationModal(
+          '❌ Invalid Image URL',
+          `The URL you provided doesn't end with an image extension.<br><br>
+           <strong>Valid image extensions:</strong><br>
+           • .jpg, .jpeg<br>
+           • .png<br>
+           • .gif<br>
+           • .webp<br>
+           • .svg<br>
+           • .bmp, .ico<br><br>
+           <strong>Your URL:</strong> <span style="color:#a03e55; word-break:break-all;">${imgUrl}</span><br><br>
+           <strong>Tip:</strong> Right-click on an image and select "Open image in new tab" to get the correct URL.`,
+          '🔗',
+          true,
+          (cancelled) => {
+            if (!cancelled) {
+              // User clicked "Try Again" - keep the form as is
+              document.getElementById('flowerImage').focus();
+            }
+          }
+        );
+        return;
+      }
+
       // Validate URL format
       try { 
         new URL(imgUrl); 
       } catch { 
         createConfirmationModal(
-          'Invalid URL', 
-          'Please use a direct image URL that starts with http:// or https://',
-          '🔗'
+          '❌ Invalid URL Format',
+          `The URL must start with http:// or https://`,
+          '🌐',
+          true,
+          (cancelled) => {
+            if (!cancelled) {
+              document.getElementById('flowerImage').focus();
+            }
+          }
         );
         return;
-      }
-
-      // Check if it might be a page URL instead of direct image
-      if (!imgUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i)) {
-        if (!confirm('This URL does not end with a common image extension (.jpg, .png, etc.).\n\nIt might be a webpage, not a direct image.\n\nDo you still want to try using it?')) {
-          return;
-        }
       }
 
       // new flower: isDefault = false
@@ -419,7 +500,7 @@
       // Show beautiful confirmation modal
       createConfirmationModal(
         'Flower Added!', 
-        `${name} has been added to your garden.`,
+        `${name} has been added to your garden. It will stay here forever.`,
         '🌱'
       );
     });
@@ -427,23 +508,88 @@
     console.error("Add button not found");
   }
 
-  // CONTACT FORM SIMULATION
+  const emailJSScript = document.createElement('script');
+  emailJSScript.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+  document.head.appendChild(emailJSScript);
+
+  // Replace these with your actual EmailJS credentials
+  const EMAILJS_PUBLIC_KEY = 'xlO6-BJ47ULnxWji1'; // Get from EmailJS Dashboard → Account → API Keys
+  const EMAILJS_SERVICE_ID = 'service_s14u6k8'; // Get from EmailJS Dashboard → Email Services
+  const EMAILJS_TEMPLATE_ID = 'template_ecoi6e3'; // Get from EmailJS Dashboard → Email Templates
+
+  emailJSScript.onload = () => {
+    // Initialize EmailJS with your Public Key
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    console.log('EmailJS initialized successfully');
+  };
+
+  // CONTACT FORM - Send email to admin (NO EMAIL FIELD)
   const sendBtn = document.getElementById('sendMessageBtn');
   if (sendBtn) {
-    sendBtn.addEventListener('click', () => {
-      const name = document.getElementById('name').value.trim() || 'Anonymous';
-      const msg = document.getElementById('message').value.trim() || 'empty message';
+    sendBtn.addEventListener('click', (e) => {
+      e.preventDefault(); // Prevent any default behavior
       
-      // Clear contact form
-      document.getElementById('name').value = '';
-      document.getElementById('message').value = '';
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
       
-      // Show message confirmation
-      createConfirmationModal(
-        'Message Sent', 
-        `Thank you ${name}! Your message has been delivered.`,
-        '✉️'
-      );
+      if (!name || !message) {
+        createConfirmationModal(
+          'Missing Information', 
+          'Please enter both your name and message.',
+          '⚠️'
+        );
+        return;
+      }
+      
+      // Show sending status
+      const originalText = sendBtn.textContent;
+      sendBtn.textContent = 'Sending... ✉️';
+      sendBtn.disabled = true;
+      
+      // Prepare email parameters - ONLY name and message (no email field)
+      const templateParams = {
+        name: name,           // Matches {{name}} in template
+        message: message       // Matches {{message}} in template
+        // NO email parameter - user doesn't provide it
+      };
+      
+      console.log('Sending email with params:', templateParams);
+      
+      // Send email using EmailJS
+      emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams
+      )
+      .then(function(response) {
+        console.log('Email sent successfully!', response);
+        
+        // Clear contact form
+        document.getElementById('name').value = '';
+        document.getElementById('message').value = '';
+        
+        // Show success modal
+        createConfirmationModal(
+          'Message Sent!', 
+          `Thank you ${name}! Your message has been delivered.`,
+          '✉️'
+        );
+      })
+      .catch(function(error) {
+        console.error('Email sending failed:', error);
+        
+        // Show error modal
+        createConfirmationModal(
+          'Message Failed', 
+          'Sorry, your message could not be sent. Please try again later.',
+          '❌'
+        );
+      })
+      .finally(function() {
+        // Restore button
+        sendBtn.textContent = originalText;
+        sendBtn.disabled = false;
+      });
     });
   }
 
