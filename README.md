@@ -2,7 +2,7 @@
 
 A serene digital flower gallery where you can curate your own garden. Built with vanilla HTML, CSS, and JavaScript, featuring smooth 3D card flips, realistic falling petals, and permanent local storage for your personal flower collection.
 
-🔗 **Live Demo**: [blush-and-bloom-phi.vercel.app](https://blush-and-bloom-phi.vercel.app)
+🔗 **Deployment**: [blush-and-bloom-phi.vercel.app](https://blush-and-bloom-phi.vercel.app)
 
 ## ✨ Features
 
