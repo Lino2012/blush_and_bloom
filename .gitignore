@@ -1,4 +1,4 @@
-# OS generated files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -11,7 +11,7 @@ desktop.ini
 *.tmp
 *.temp
 
-# IDE - VSCode
+# IDE files
 .vscode/
 .vscode/*
 !.vscode/settings.json
@@ -19,45 +19,47 @@ desktop.ini
 !.vscode/launch.json
 !.vscode/extensions.json
 *.code-workspace
-
-# IDE - JetBrains (IntelliJ, WebStorm, etc.)
 .idea/
 *.iml
 *.iws
 *.ipr
-out/
-.idea_modules/
-
-# IDE - Sublime Text
-*.sublime-*
+.sublime-*
 *.sublime-workspace
 
-# IDE - Atom
-.atom/
-.pulsar/
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+*.firebase
+.firebaserc
+firebase.json
+!firebase.json
+firestore.rules
+!firestore.rules
+firestore.indexes.json
+!firestore.indexes.json
+database.rules.json
+!database.rules.json
+storage.rules
+!storage.rules
 
-# IDE - Eclipse
-.project
-.classpath
-.settings/
-.metadata/
+# Vercel
+.vercel/
+vercel.json
+!.vercel/project.json
+.vercel/output/
+.vercel
 
-# IDE - NetBeans
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.example
+!.env.example
 
-# Editor temp files
-*.swp
-*.swo
-*~
-.*.swp
-.*.swo
-
-# EmailJS keys and sensitive information
+# EmailJS keys - NEVER commit these!
 **/emailjs-keys.js
 **/emailjs-config.js
 **/emailjs-credentials.js
@@ -67,15 +69,8 @@ nbdist/
 **/secrets.js
 **/credentials.json
 **/config.js
-.env
-.env.local
-.env.development
-.env.production
-.env.test
-.env.example
-!.env.example
 
-# Node.js dependencies (if you add them later)
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -83,25 +78,6 @@ yarn-error.log*
 package-lock.json
 yarn.lock
 .pnpm-debug.log*
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-
-# Testing
-coverage/
-.nyc_output/
-.junit/
-test-results/
-*.test.js
-*.spec.js
-__tests__/
-__mocks__/
 
 # Build outputs
 dist/
@@ -113,15 +89,13 @@ out/
 *.bak
 *.backup
 backups/
-backup/
 temp/
 tmp/
 
-# Project specific
+# Project specific - User uploads
 /uploads/
 /images/uploads/
 /images/user-uploads/
-/images/temp/
 *.jpg
 *.jpeg
 *.png
@@ -135,113 +109,16 @@ tmp/
 !images/dahlia.png
 !images/lotus.png
 !images/default/
-!images/default/*.png
-!images/default/*.jpg
 
-# Documentation
-*.pdf
-*.doc
-*.docx
-*.ppt
-*.pptx
-/docs/_build/
-/docs/_site/
+# Logs
+logs/
+*.log
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-*.sql
-*.mdb
-
-# Archives
-*.zip
-*.tar
-*.gz
-*.rar
-*.7z
-
-# System files
-*.exe
-*.dll
-*.so
-*.dylib
-*.bin
-*.msi
-*.deb
-*.rpm
-
-# Cache files
-.cache/
-.cache-loader
-*.cache
-.eslintcache
-.stylelintcache
-.prettiercache
-
-# Environment and secrets
-**/secrets/
-**/private/
-**/private-key*
-**/private_key*
-**/id_rsa*
-**/id_dsa*
-*.pem
-*.p12
-*.pfx
-*.key
-*.crt
-*.cert
-*.keystore
-
-# API keys and tokens
-**/api-keys.js
-**/tokens.js
-**/auth.js
-**/auth.json
-**/oauth*.json
-**/oauth*.js
-**/token*.json
-**/token*.js
-
-# Cloud provider configs
-.aws.json
-.aws/
-.gcloud/
-.azure/
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-*.tfplan
-
-# Docker
-.dockerignore
-Dockerfile
-docker-compose.yml
-docker-compose.override.yml
-*.docker
-
-# GitHub specific
-.github/
-!.github/workflows/
-*.patch
-
-# Vercel
-.vercel/
-vercel.json
-*.vercel
-
-# Netlify
-.netlify/
-netlify.toml
-
-# Railway
-railway.json
-
-# Heroku
-Procfile
-heroku.yml
+# Testing
+coverage/
+.nyc_output/
+.junit/
+test-results/
 
 # Don't ignore these important files
 !index.html
@@ -250,16 +127,8 @@ heroku.yml
 !js/
 !js/script.js
 !images/
-!images/peony.png
-!images/rose.png
-!images/cherry.png
-!images/camellia.png
-!images/dahlia.png
-!images/lotus.png
 !README.md
 !.gitignore
 !.gitattributes
 !.editorconfig
-!.prettierrc
-!.eslintrc
-!.stylelintrc
+.env*.local

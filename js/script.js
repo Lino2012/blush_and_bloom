@@ -1,6 +1,23 @@
 (function() {
   console.log("Script loaded successfully");
   
+  // ---------- FIREBASE CONFIG ----------
+   const firebaseConfig = {
+    apiKey: "AIzaSyAtbDT448-nOlnXpJbY2fv6dGqqkKbAQR0",
+    authDomain: "blush-and-bloom-2fed0.firebaseapp.com",
+    projectId: "blush-and-bloom-2fed0",
+    storageBucket: "blush-and-bloom-2fed0.firebasestorage.app",
+    messagingSenderId: "264059467043",
+    appId: "1:264059467043:web:8651eb5506090b56fd4896",
+    measurementId: "G-FKWE8Q6S7F"
+  };
+
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  
   // ---------- FALLING PETALS (slowed) ----------
   const canvas = document.getElementById('petal-canvas');
   const ctx = canvas.getContext('2d');
@@ -260,15 +277,130 @@
     return modal;
   }
 
-  // ---------- URL EXTENSION VALIDATION FUNCTION (NEW) ----------
+  // ---------- URL EXTENSION VALIDATION FUNCTION ----------
   function hasImageExtension(url) {
     // Check if URL ends with common image extensions
     return url.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i) !== null;
   }
 
-  // ---------- FLOWER DATA WITH PERMANENT STORAGE (no expiration) ----------
-  const STORAGE_KEY = 'blushBloomFlowers';
+  // ---------- AUTH MODAL ----------
+  function showAuthModal() {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('auth-modal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'auth-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000000;
+      background: rgba(0,0,0,0.3);
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: white;
+      padding: 40px;
+      border-radius: 60px 20px 60px 20px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    `;
+    
+    content.innerHTML = `
+      <div style="font-size: 50px; margin-bottom: 20px;">🌸</div>
+      <h2 style="margin-bottom: 30px; color: #633f48;">Sign in to save flowers</h2>
+      <input id="auth-email" type="email" placeholder="Email" style="
+        width: 100%;
+        padding: 15px;
+        margin-bottom: 15px;
+        border: 2px solid #ffd8e0;
+        border-radius: 30px;
+        font-size: 16px;
+        box-sizing: border-box;
+      ">
+      <input id="auth-password" type="password" placeholder="Password" style="
+        width: 100%;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 2px solid #ffd8e0;
+        border-radius: 30px;
+        font-size: 16px;
+        box-sizing: border-box;
+      ">
+      <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <button id="auth-login-btn" style="
+          background: #ffb3c6;
+          border: none;
+          padding: 12px 25px;
+          border-radius: 30px;
+          font-size: 16px;
+          cursor: pointer;
+        ">Sign In</button>
+        <button id="auth-signup-btn" style="
+          background: #ffe2e9;
+          border: none;
+          padding: 12px 25px;
+          border-radius: 30px;
+          font-size: 16px;
+          cursor: pointer;
+        ">Sign Up</button>
+        <button id="auth-close-btn" style="
+          background: transparent;
+          border: 2px solid #ffb3c6;
+          padding: 12px 25px;
+          border-radius: 30px;
+          font-size: 16px;
+          cursor: pointer;
+        ">Close</button>
+      </div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    document.getElementById('auth-login-btn').onclick = () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        createConfirmationModal('Error', 'Please enter email and password', '⚠️');
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          modal.remove();
+          loadUserFlowers();
+        })
+        .catch(error => createConfirmationModal('Error', error.message, '⚠️'));
+    };
+    
+    document.getElementById('auth-signup-btn').onclick = () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        createConfirmationModal('Error', 'Please enter email and password', '⚠️');
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          modal.remove();
+          loadUserFlowers();
+        })
+        .catch(error => createConfirmationModal('Error', error.message, '⚠️'));
+    };
+    
+    document.getElementById('auth-close-btn').onclick = () => modal.remove();
+  }
 
+  // ---------- FLOWER DATA ----------
   // Default flowers with local images
   const defaultFlowers = [
     { 
@@ -315,37 +447,67 @@
     }
   ];
 
-  let flowers = [];
+  let flowers = [...defaultFlowers];
 
-  function loadFlowers() {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // ensure all stored flowers are marked as not default (user-added)
-        parsed.forEach(f => f.isDefault = false);
-        flowers = [...defaultFlowers, ...parsed];
-        console.log("Loaded flowers from storage:", flowers.length, "total flowers");
-        console.log("Your flowers are stored permanently in your browser!");
-      } catch {
-        flowers = [...defaultFlowers];
-        console.log("Error parsing storage, using defaults");
-      }
+  // Load user's flowers from Firestore
+  function loadUserFlowers() {
+    const user = auth.currentUser;
+    if (!user) {
+      flowers = [...defaultFlowers];
+      renderFlowers();
+      return;
+    }
+    
+    db.collection('users').doc(user.uid).collection('flowers').get()
+      .then(snapshot => {
+        const userFlowers = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          isDefault: false
+        }));
+        flowers = [...defaultFlowers, ...userFlowers];
+        renderFlowers();
+      })
+      .catch(error => console.error("Error loading flowers:", error));
+  }
+
+  // Save when user adds flower
+  function saveUserFlower(flower) {
+    const user = auth.currentUser;
+    if (!user) {
+      showAuthModal();
+      return Promise.reject('Not authenticated');
+    }
+    
+    return db.collection('users').doc(user.uid).collection('flowers').add(flower)
+      .then(() => {
+        loadUserFlowers();
+        return Promise.resolve();
+      });
+  }
+
+  // Delete user flower
+  function deleteUserFlower(flowerId) {
+    const user = auth.currentUser;
+    if (!user) return Promise.reject('Not authenticated');
+    
+    return db.collection('users').doc(user.uid).collection('flowers').doc(flowerId).delete()
+      .then(() => {
+        loadUserFlowers();
+        return Promise.resolve();
+      });
+  }
+
+  // Listen to auth state changes
+  auth.onAuthStateChanged(user => {
+    console.log("Auth state changed:", user ? user.email : 'logged out');
+    if (user) {
+      loadUserFlowers();
     } else {
       flowers = [...defaultFlowers];
-      console.log("No storage found, using default flowers");
+      renderFlowers();
     }
-  }
-
-  function saveFlowers() {
-    // only save user-added flowers (those with isDefault = false)
-    const userFlowers = flowers.filter(f => !f.isDefault);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userFlowers));
-    console.log("Saved user flowers permanently:", userFlowers.length);
-    console.log("These flowers will stay here forever until you remove them.");
-  }
-
-  loadFlowers();
+  });
 
   const grid = document.getElementById('flowerGrid');
   console.log("Grid element:", grid);
@@ -372,14 +534,14 @@
           <div class="card-front">
             <div class="image-morph">
               <img class="flower-img" src="${f.img}" alt="${f.name}" loading="lazy" 
-                   onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'600\' viewBox=\'0 0 600 600\'%3E%3Crect width=\'600\' height=\'600\' fill=\'%23ffd0d9\'/%3E%3Ctext x=\'300\' y=\'300\' font-size=\'40\' text-anchor=\'middle\' fill=\'%23633f48\' font-family=\'Arial\'%3E🌸%3C/text%3E%3Ctext x=\'300\' y=\'380\' font-size=\'24\' text-anchor=\'middle\' fill=\'%23633f48\' font-family=\'Arial\'%3E${f.name}%3C/text%3E%3C/svg%3E';">
+                   onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'600\' height=\'600\' viewBox=\'0 0 600 600\'%3E%3Crect width=\'600\' height=\'600\' fill=\'%23ffd0d9\'/%3E%3Ctext x=\'300\' y=\'300\' font-size=\'40\' text-anchor=\'middle\' fill=\'%23633f48\' font-family=\'Arial\'%3E🌸%3C/text%3E%3C/svg%3E';">
             </div>
             <div class="flower-name">${f.name}</div>
             <div class="latin-name">${f.latin}</div>
           </div>
           <div class="card-back">
             <p>🌸 ${f.desc || 'A beautiful flower.'}</p>
-            ${showRemove ? `<button class="remove-btn" data-index="${index}">remove</button>` : ''}
+            ${showRemove ? `<button class="remove-btn" data-id="${f.id || ''}" data-index="${index}">remove</button>` : ''}
           </div>
         </div>
       `;
@@ -396,16 +558,12 @@
       if (showRemove) {
         const removeBtn = card.querySelector('.remove-btn');
         removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation(); // Prevent the card from flipping when clicking remove
-          flowers.splice(index, 1);
-          saveFlowers();
-          renderFlowers();
-          // Show removal confirmation
-          createConfirmationModal(
-            'Flower Removed', 
-            `${f.name} has been gently removed from your garden.`,
-            '🍂'
-          );
+          e.stopPropagation();
+          if (f.id) {
+            deleteUserFlower(f.id).catch(() => {
+              createConfirmationModal('Error', 'Please sign in to delete flowers', '⚠️');
+            });
+          }
         });
       }
 
@@ -414,8 +572,6 @@
   }
 
   renderFlowers();
-
-  
 
   // ADD NEW FLOWER (always user-added, deletable) - NO DEFAULT VALUES
   const addBtn = document.getElementById('addFlowerBtn');
@@ -435,7 +591,7 @@
         return; 
       }
       
-      // ---------- NEW: Check if URL has image extension ----------
+      // Check if URL has image extension
       if (!hasImageExtension(imgUrl)) {
         createConfirmationModal(
           '❌ Invalid Image URL',
@@ -479,55 +635,115 @@
         return;
       }
 
-      // new flower: isDefault = false
-      flowers.push({ 
+      const newFlower = { 
         name, 
         latin, 
         img: imgUrl, 
         desc: desc || 'A lovely addition.',
-        isDefault: false 
-      });
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
 
-      saveFlowers();
-      renderFlowers();
+      // Check if user is authenticated
+      if (auth.currentUser) {
+        saveUserFlower(newFlower).catch(() => {
+          // Error already handled in saveUserFlower
+        });
+      } else {
+        showAuthModal();
+        return;
+      }
 
       // Clear all inputs completely
       document.getElementById('flowerName').value = '';
       document.getElementById('flowerLatin').value = '';
       document.getElementById('flowerImage').value = '';
       document.getElementById('flowerDesc').value = '';
-      
-      // Show beautiful confirmation modal
-      createConfirmationModal(
-        'Flower Added!', 
-        `${name} has been added to your garden. It will stay here forever.`,
-        '🌱'
-      );
     });
   } else {
     console.error("Add button not found");
   }
 
+  // Add logout button to navigation
+  function addAuthButtons() {
+    const nav = document.querySelector('.nav-links');
+    if (!nav) return;
+    
+    // Clear existing auth buttons to avoid duplicates
+    const existingAuth = nav.querySelectorAll('.auth-btn');
+    existingAuth.forEach(btn => btn.remove());
+    
+    // Create login button
+    const loginBtn = document.createElement('a');
+    loginBtn.href = '#';
+    loginBtn.textContent = 'Login';
+    loginBtn.className = 'auth-btn';
+    loginBtn.style.cssText = `
+      text-decoration: none;
+      font-size: 1.2rem;
+      color: #7a4e5a;
+      padding: 0.4rem 0.8rem;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.3);
+    `;
+    loginBtn.onclick = (e) => {
+      e.preventDefault();
+      showAuthModal();
+    };
+    
+    // Create logout button
+    const logoutBtn = document.createElement('a');
+    logoutBtn.href = '#';
+    logoutBtn.textContent = 'Logout';
+    logoutBtn.className = 'auth-btn';
+    logoutBtn.style.cssText = `
+      text-decoration: none;
+      font-size: 1.2rem;
+      color: #7a4e5a;
+      padding: 0.4rem 0.8rem;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.3);
+    `;
+    logoutBtn.onclick = (e) => {
+      e.preventDefault();
+      auth.signOut();
+    };
+    
+    // Add buttons based on auth state
+    if (auth.currentUser) {
+      nav.appendChild(logoutBtn);
+    } else {
+      nav.appendChild(loginBtn);
+    }
+  }
+
+  // Update auth buttons when auth state changes
+  auth.onAuthStateChanged(() => {
+    addAuthButtons();
+  });
+
+  // Initial auth buttons
+  setTimeout(addAuthButtons, 1000);
+
+  // EmailJS setup
   const emailJSScript = document.createElement('script');
   emailJSScript.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
   document.head.appendChild(emailJSScript);
 
-  // Replace these with your actual EmailJS credentials
-  const EMAILJS_PUBLIC_KEY = 'xlO6-BJ47ULnxWji1'; // Get from EmailJS Dashboard → Account → API Keys
-  const EMAILJS_SERVICE_ID = 'service_s14u6k8'; // Get from EmailJS Dashboard → Email Services
-  const EMAILJS_TEMPLATE_ID = 'template_ecoi6e3'; // Get from EmailJS Dashboard → Email Templates
+  // EmailJS credentials - Replace with your actual keys
+  const EMAILJS_PUBLIC_KEY = 'xlO6-BJ47ULnxWji1';
+  const EMAILJS_SERVICE_ID = 'service_s14u6k8';
+  const EMAILJS_TEMPLATE_ID = 'template_ecoi6e3';
 
   emailJSScript.onload = () => {
-    // Initialize EmailJS with your Public Key
     emailjs.init(EMAILJS_PUBLIC_KEY);
     console.log('EmailJS initialized successfully');
   };
 
-  // CONTACT FORM - Send email to admin (NO EMAIL FIELD)
+  // CONTACT FORM
   const sendBtn = document.getElementById('sendMessageBtn');
   if (sendBtn) {
     sendBtn.addEventListener('click', (e) => {
-      e.preventDefault(); // Prevent any default behavior
+      e.preventDefault();
       
       const name = document.getElementById('name').value.trim();
       const message = document.getElementById('message').value.trim();
@@ -541,21 +757,15 @@
         return;
       }
       
-      // Show sending status
       const originalText = sendBtn.textContent;
       sendBtn.textContent = 'Sending... ✉️';
       sendBtn.disabled = true;
       
-      // Prepare email parameters - ONLY name and message (no email field)
       const templateParams = {
-        name: name,           // Matches {{name}} in template
-        message: message       // Matches {{message}} in template
-        // NO email parameter - user doesn't provide it
+        name: name,
+        message: message
       };
       
-      console.log('Sending email with params:', templateParams);
-      
-      // Send email using EmailJS
       emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
@@ -564,11 +774,9 @@
       .then(function(response) {
         console.log('Email sent successfully!', response);
         
-        // Clear contact form
         document.getElementById('name').value = '';
         document.getElementById('message').value = '';
         
-        // Show success modal
         createConfirmationModal(
           'Message Sent!', 
           `Thank you ${name}! Your message has been delivered.`,
@@ -578,7 +786,6 @@
       .catch(function(error) {
         console.error('Email sending failed:', error);
         
-        // Show error modal
         createConfirmationModal(
           'Message Failed', 
           'Sorry, your message could not be sent. Please try again later.',
@@ -586,7 +793,6 @@
         );
       })
       .finally(function() {
-        // Restore button
         sendBtn.textContent = originalText;
         sendBtn.disabled = false;
       });
